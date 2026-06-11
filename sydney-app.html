@@ -10,14 +10,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            /* 精準延伸新橫幅圖片背景的日系溫潤暖米色 */
             background-color: #F4F1E9;
             font-family: "Helvetica Neue", Arial, "Segoe UI", "Noto Sans TC", sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* 頁首圖片與白底圓弧無縫銜接 */
         .main-content-wrapper {
             border-top-left-radius: 36px;
             border-top-right-radius: 36px;
@@ -64,7 +62,10 @@
 
                 <div class="bg-gradient-to-br from-[#7792A7] to-[#55738E] rounded-2xl p-4 text-white shadow-sm mb-4 flex items-center justify-between">
                     <div>
-                        <div class="text-[10px] font-medium text-slate-200 tracking-wider">SYDNEY WINTER WEATHER</div>
+                        <div class="text-[10px] font-medium text-slate-200 tracking-wider flex items-center gap-1">
+                            <span>SYDNEY REALTIME WEATHER</span>
+                            <span v-if="weather.loading" class="text-[9px] bg-white/20 px-1 rounded animate-pulse">更新中...</span>
+                        </div>
                         <div class="flex items-baseline gap-2 mt-0.5">
                             <span class="text-2xl font-bold">{{ weather.temp }}°C</span>
                             <span class="text-xs text-slate-200">體感 {{ weather.feelsLike }}°C</span>
@@ -108,7 +109,7 @@
                             </div>
                             <div class="mt-3 pt-2 border-t border-neutral-50 flex justify-between items-center text-xs text-neutral-500">
                                 <div><i class="fas fa-info-circle mr-1"></i>降落雪梨國際航廈 (T1)</div>
-                                <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Sydney Airport International Terminal T1')" target="_blank" class="text-blue-500 font-bold"><i class="fas fa-location-arrow mr-1"></i>導航</a>
+                                <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Sydney Airport International Terminal T1')" target="_blank" class="text-blue-500 font-bold"><i class="fas fa-location-arrow mr-1"></i>地圖導航</a>
                             </div>
                         </div>
 
@@ -123,9 +124,12 @@
                                     </span>
                                 </div>
 
-                                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-xs text-neutral-400">
-                                    <div v-if="item.time"><i class="far fa-clock mr-1"></i>{{ item.time }}</div>
-                                    <div v-if="item.price && item.category !== '美食'"><i class="fas fa-ticket-alt mr-1"></i>{{ item.price }}</div>
+                                <div class="grid grid-cols-2 gap-x-2 gap-y-1 mt-2 text-xs text-neutral-400">
+                                    <div v-if="item.time" class="truncate"><i class="far fa-clock mr-1 text-neutral-300"></i>時間: {{ item.time }}</div>
+                                    <div v-if="item.price && item.category !== '美食'" class="truncate"><i class="fas fa-ticket-alt mr-1 text-neutral-300"></i>門票: {{ item.price }}</div>
+                                    <div v-if="item.restaurant" class="truncate text-amber-700 font-medium"><i class="fas fa-utensils mr-1 text-amber-400"></i>餐廳: {{ item.restaurant }}</div>
+                                    <div v-if="item.photoSpot" class="truncate text-emerald-700 font-medium"><i class="fas fa-camera mr-1 text-emerald-400"></i>打卡: {{ item.photoSpot }}</div>
+                                    <div v-if="item.shopping" class="truncate text-purple-700 font-medium"><i class="fas fa-shopping-bag mr-1 text-purple-400"></i>購物: {{ item.shopping }}</div>
                                 </div>
 
                                 <div v-if="item.note" class="bg-[#F6F5F2] p-2.5 rounded-xl text-xs text-neutral-600 mt-2 font-normal leading-relaxed">
@@ -151,7 +155,7 @@
                 </button>
             </div>
 
-            <div v-if="currentTab === 'info'" class="space-y-4 pb-12">
+            <div v-if="currentTab === 'info'" class="space-y-5 pb-12">
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100">
                     <h3 class="font-bold text-neutral-800 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-calculator text-[#3D5A80]"></i> 澳幣匯率快速換算</h3>
                     <div class="flex items-center gap-2">
@@ -168,8 +172,54 @@
                     <div class="text-[10px] text-neutral-400 mt-2 text-right">基準匯率：1 AUD ≈ 21.3 TWD</div>
                 </div>
 
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100 overflow-hidden">
+                    <h3 class="font-bold text-neutral-800 text-sm mb-2 flex items-center gap-1.5"><i class="fas fa-route text-emerald-600"></i> 📍 推薦掃貨路線（步行可達）</h3>
+                    <div class="space-y-2.5 text-xs">
+                        <div v-for="route in sweepRoutes" class="p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-neutral-800">{{ route.order }}. {{ route.shop }}</span>
+                                <span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded font-medium">{{ route.hours }}</span>
+                            </div>
+                            <div class="text-neutral-600 mt-1 font-medium">✨ 推薦：{{ route.items }}</div>
+                            <div class="text-[10px] text-neutral-400 mt-0.5"><i class="fas fa-map-marker-alt mr-1"></i>{{ route.location }}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100">
-                    <h3 class="font-bold text-neutral-800 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-plane text-[#3D5A80]"></i> 越南航空機票確認明細</h3>
+                    <h3 class="font-bold text-neutral-800 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-th-list text-amber-600"></i> 🛒 伴手禮購物清單總覽</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-neutral-200 text-neutral-400 font-medium">
+                                    <th class="py-1.5 font-bold">類別</th>
+                                    <th class="py-1.5 font-bold">商品名稱</th>
+                                    <th class="py-1.5 font-bold text-right">參考價</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-neutral-100 font-medium text-neutral-700">
+                                <tr v-for="item in masterShopList" class="hover:bg-neutral-50/50">
+                                    <td class="py-2 text-[11px] text-neutral-400">{{ item.cat }}</td>
+                                    <td class="py-2 font-bold text-neutral-800">{{ item.name }}<br><span class="text-[10px] text-neutral-400 font-normal">📍 {{ item.place }}</span></td>
+                                    <td class="py-2 text-right text-amber-700 font-bold">{{ item.price }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100">
+                    <h3 class="font-bold text-neutral-800 text-sm mb-2 flex items-center gap-1.5"><i class="fas fa-lightbulb text-amber-500"></i> 💡 購物實用小提醒</h3>
+                    <div class="space-y-3 text-xs">
+                        <div v-for="tip in shopTips" class="p-2.5 bg-amber-50/40 rounded-xl border border-amber-100/60">
+                            <span class="font-bold text-amber-800 block mb-0.5">📌 {{ tip.title }}</span>
+                            <p class="text-neutral-600 leading-relaxed font-normal">{{ tip.content }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100">
+                    <h3 class="font-bold text-neutral-800 text-sm mb-3 flex items-center gap-1.5"><i class="fas fa-plane text-[#3D5A80]"></i> 越南航空航段明細</h3>
                     <div class="space-y-3 text-xs">
                         <div class="p-3 bg-[#F6F5F2] rounded-xl border-l-2 border-blue-500">
                             <span class="bg-[#3D5A80] text-white px-2 py-0.5 rounded font-bold text-[9px]">去程 06/13 - 06/14</span>
@@ -199,14 +249,14 @@
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-neutral-100">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-neutral-800 text-sm flex items-center gap-1.5"><i class="fas fa-car text-[#3D5A80]"></i> 租車合約明細 (Sixt)</h3>
-                        <span class="text-[10px] font-mono text-neutral-400">代碼. 9733602100</span>
+                        <span class="text-[10px] font-mono text-neutral-400">合約. 9733602100</span>
                     </div>
                     <div class="text-xs text-neutral-600 space-y-1">
-                        <div><strong>主要駕駛人：</strong> LIN JAY</div>
+                        <div><strong>主要駕駛：</strong> LIN JAY</div>
                         <div><strong>預約車款：</strong> Toyota RAV4 Hybrid (SFAH)</div>
                         <div><strong>取車時間：</strong> 06/14 11:30 hrs ➔ 還車 06/18 21:00 hrs</div>
                         <div><strong>取還店址：</strong> 52 Sir John Young Crescent, Woolloomooloo</div>
-                        <div class="text-emerald-700 font-medium"><strong>保險明細：</strong> 全包式尊榮保護 (0自負額、含道路救援)</div>
+                        <div class="text-emerald-700 font-medium"><strong>保障明細：</strong> 全包式尊榮保護 (0自負額、含道路救援)</div>
                     </div>
                     <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('SIXT Car & Truck Rental Sydney City')" target="_blank" class="mt-3 block w-full bg-neutral-100 text-neutral-700 text-xs font-bold py-2 rounded-xl text-center">
                         <i class="fas fa-map-marked-alt mr-1"></i> 導航至取車據點
@@ -215,7 +265,7 @@
 
                 <div class="bg-rose-50 rounded-2xl p-4 border border-rose-100">
                     <h3 class="font-bold text-rose-800 text-sm mb-1">🚨 澳洲求助熱線</h3>
-                    <p class="text-xs text-rose-600 mb-2">緊急狀況（警察、消防、救護車）請直撥 000</p>
+                    <p class="text-xs text-rose-600 mb-2">緊急狀況請直撥 000</p>
                 </div>
             </div>
 
@@ -242,7 +292,7 @@
 
             <div v-if="currentTab === 'expense'" class="space-y-4 pb-20">
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 text-center">
-                    <div class="text-xs text-neutral-400 font-medium tracking-wider">旅行累積累積總開銷</div>
+                    <div class="text-xs text-neutral-400 font-medium tracking-wider">旅行累積總開銷統計</div>
                     <div class="text-3xl font-bold text-neutral-800 mt-1">${{ totalExpenseAmount.toLocaleString() }} <span class="text-xs font-normal text-neutral-400">AUD</span></div>
                     <div class="text-[11px] text-neutral-400 mt-0.5">約折合 NT$ {{ (totalExpenseAmount * 21.3).toLocaleString(undefined, {maximumFractionDigits:0}) }} 元</div>
                 </div>
@@ -289,12 +339,26 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-neutral-400 mb-1">時間/營業時間</label>
+                            <label class="block text-neutral-400 mb-1">開始/營業時間</label>
                             <input type="text" v-model="modal.data.time" class="w-full bg-neutral-50 border border-neutral-100 rounded-lg p-2">
                         </div>
                         <div>
                             <label class="block text-neutral-400 mb-1">門票/預估費用</label>
                             <input type="text" v-model="modal.data.price" class="w-full bg-neutral-50 border border-neutral-100 rounded-lg p-2">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-neutral-400 mb-1">推薦餐廳</label>
+                            <input type="text" v-model="modal.data.restaurant" class="w-full bg-neutral-50 border border-neutral-100 rounded-lg p-2">
+                        </div>
+                        <div>
+                            <label class="block text-neutral-400 mb-1">打卡機位</label>
+                            <input type="text" v-model="modal.data.photoSpot" class="w-full bg-neutral-50 border border-neutral-100 rounded-lg p-2">
+                        </div>
+                        <div>
+                            <label class="block text-neutral-400 mb-1">推薦購物</label>
+                            <input type="text" v-model="modal.data.shopping" class="w-full bg-neutral-50 border border-neutral-100 rounded-lg p-2">
                         </div>
                     </div>
                     <div>
@@ -347,7 +411,9 @@
             setup() {
                 const currentTab = ref('itinerary');
                 const selectedDayId = ref('0614');
-                const weather = ref({ temp: 14, feelsLike: 13, desc: '冬日微涼', iconClass: 'fas fa-snowflake text-sky-200' });
+                
+                // 🔴 天氣資料狀態（引入 loading 狀態控制）
+                const weather = ref({ temp: '--', feelsLike: '--', desc: '載入中...', iconClass: 'fas fa-spinner animate-spin text-slate-300', loading: true });
 
                 const days = ref([
                     { id: '0614', weekday: 'Sun', dateNum: '14' },
@@ -359,55 +425,135 @@
                     { id: '0620', weekday: 'Sat', dateNum: '20' }
                 ]);
 
-                // 基於 Trello 面板深度對齊的真實行程數據庫
+                // 🔴 非同步函數：即時調用氣象 API 獲取真實雪梨氣象與體感溫度數據
+                const fetchLiveSydneyWeather = async () => {
+                    weather.value.loading = true;
+                    try {
+                        // 呼叫 Open-Meteo 免費氣象數據核心（鎖定雪梨市區經緯度）
+                        const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-33.8688&longitude=151.2093&current=temperature_2m,apparent_temperature,weather_code');
+                        const data = await response.json();
+                        
+                        if (data && data.current) {
+                            const currentData = data.current;
+                            weather.value.temp = Math.round(currentData.temperature_2m);
+                            weather.value.feelsLike = Math.round(currentData.apparent_temperature);
+                            
+                            // 解析 WMO Weather Code 代碼切換對應圖示與狀態描述
+                            const code = currentData.weather_code;
+                            if (code === 0) {
+                                weather.value.desc = '冬日晴朗';
+                                weather.value.iconClass = 'fas fa-sun text-amber-300 animate-pulse';
+                            } else if (code >= 1 && code <= 3) {
+                                weather.value.desc = '多雲微陰';
+                                weather.value.iconClass = 'fas fa-cloud text-slate-200';
+                            } else if (code >= 51 && code <= 67) {
+                                weather.value.desc = '冬日細雨';
+                                weather.value.iconClass = 'fas fa-cloud-showers-heavy text-sky-200';
+                            } else if (code >= 71 && code <= 77) {
+                                weather.value.desc = '冬日降雪';
+                                weather.value.iconClass = 'fas fa-snowflake text-sky-100 animate-spin';
+                            } else {
+                                weather.value.desc = '陣雨微涼';
+                                weather.value.iconClass = 'fas fa-cloud-rain text-slate-300';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('即時天氣擷取失敗，切換至兜底預設值:', error);
+                        // 兜底預設極簡冬晴數據
+                        weather.value.temp = 15;
+                        weather.value.feelsLike = 14;
+                        weather.value.desc = '冬日晴朗';
+                        weather.value.iconClass = 'fas fa-sun text-amber-300';
+                    } finally {
+                        weather.value.loading = false;
+                    }
+                };
+
+                // 📍 推薦掃貨路線表
+                const sweepRoutes = ref([
+                    { order: 1, shop: 'Woolworths Town Hall', hours: '06:00-24:00', items: 'Tim Tam、Knoppers、Pods、Shapes 餅乾、薑汁啤酒、麥盧卡蜂蜜', location: 'Town Hall 站地下，QVB 對面' },
+                    { order: 2, shop: 'Coles World Square', hours: '06:00-24:00', items: '同上，另有 Red Rock Deli 薯片、袋鼠餅乾、Vegemite 酵母醬', location: '650 George St, World Square' },
+                    { order: 3, shop: 'Chemist Warehouse Pitt Street', hours: '07:30-20:30', items: 'Swisse/Blackmores保健品、Lucas\'木瓜霜、綿羊油、Sukin、星期四農莊', location: '80 Pitt St 或 614-624 George St' },
+                    { order: 4, shop: 'Priceline World Square', hours: '07:00-20:00', items: '化妝品、保養護膚品、特價大罐綿羊油（部分出清比 CW 便宜）', location: '644 George St, World Square' }
+                ]);
+
+                // 🛒 完整購物伴手禮明細清單
+                const masterShopList = ref([
+                    { cat: '零食', name: 'Tim Tam 巧克力餅乾', place: 'Woolworths / Coles', price: '約 $3-5 AUD' },
+                    { cat: '零食', name: 'Knoppers 榛果威化餅', place: 'Woolworths / Aldi', price: '約 $4-6 AUD' },
+                    { cat: '零食', name: 'Pods 爆脆口巧克力', place: 'Woolworths / Coles', price: '約 $4-5 AUD' },
+                    { cat: '零食', name: 'Shapes 袋鼠餅乾', place: 'Woolworths / Coles', price: '約 $3-4 AUD' },
+                    { cat: '零食', name: 'Red Rock Deli 頂級薯片', place: 'Woolworths / Coles', price: '約 $5-6 AUD' },
+                    { cat: '零食', name: 'Bundaberg 經典薑汁啤酒', place: 'Woolworths / Coles', price: '約 $4-6 AUD' },
+                    { cat: '藥妝', name: 'Lucas\' Papaw 萬用木瓜霜', place: 'Chemist Warehouse', price: '約 $6-8 AUD' },
+                    { cat: '藥妝', name: 'Healthy Care / G&M 綿羊油', place: 'CW / Priceline', price: '約 $3-5 AUD' },
+                    { cat: '藥妝', name: 'Swisse / Blackmores 保健品', place: 'Chemist Warehouse', price: '視品項而定' },
+                    { cat: '藥妝', name: 'Sukin 草本天然護膚品', place: 'CW / Priceline', price: '約 $10-20 AUD' },
+                    { cat: '藥妝', name: '星期四農莊茶樹精油', place: 'Chemist Warehouse', price: '約 $10-15 AUD' },
+                    { cat: '特色', name: '麥盧卡蜂蜜 (MGO 50+)', place: 'Woolworths / Coles', price: '約 $15-30 AUD' },
+                    { cat: '特色', name: 'Vegemite 鹹酵母抹醬', place: 'Woolworths / Coles', price: '約 $4-5 AUD' },
+                    { cat: '精品', name: 'Aesop 護膚頂級香氛', place: 'QVB / 專賣店', price: '約 $40-100 AUD' },
+                    { cat: '精品', name: 'T2 經典茶具 & 英式茶葉', place: 'QVB / 專賣店', price: '約 $15-50 AUD' }
+                ]);
+
+                // 💡 5大購物實用小提醒
+                const shopTips = ref([
+                    { title: '超市每週特價更換', content: 'Woolworths 和 Coles 每週三更換半價目錄，Tim Tam、Knoppers 等零食一看到特價就直接放購物籃！' },
+                    { title: '藥妝比價邏輯', content: 'Chemist Warehouse 買保健品與維他命全澳洲最低價；Priceline 買彩妝與醫美護膚品的牌子比較齊全，兩家互補。' },
+                    { title: 'TRS 退稅政策門檻', content: '在同一家店（ABN 統編相同）單次消費滿 $300 AUD 即可退稅。記得手機下載 TRS App 錄入發票，走機場 QR 專用道非常快速！' },
+                    { title: '手提與託運限制', content: '液體、噴霧類、蜂蜜、果醬、大罐護膚乳液通通必須放託運行李，精品奢侈品退稅則必須隨身手提給海關檢查。' },
+                    { title: '營業時間完全免驚', content: 'Town Hall 的 Woolworths 與 World Square 的 Coles 都一路開到午夜 24:00，晚上自駕回市區再去大掃貨完全來得及！' }
+                ]);
+
+                // 深度整合 7日完整行程資料庫
                 const itineraryItems = ref([
                     // 6/14 Sun D-1
-                    { id: 1, dayId: '0614', category: '航班', name: '越南航空抵達雪梨', time: '08:15', price: '已付', note: '抵達雪梨機場航廈 (T1)。出關後搭 Maxi Taxi 前往 city。', transitType: '開車', transitTime: '45' },
-                    { id: 2, dayId: '0614', category: '住宿', name: 'YEHS Hotel 寄放行李', time: '09:30', price: '免費', note: '抵達飯店大廳安全存放行李。', transitType: '步行', transitTime: '15' },
-                    { id: 3, dayId: '0614', category: '住宿', name: '租車點辦理領車手續', time: '11:30', price: '已含', note: '自駕據點 SIXT 領取 Toyota RAV4 Hybrid 開啟旅程。', transitType: '開車', transitTime: '20' },
-                    { id: 4, dayId: '0614', category: '美食', name: 'Happyfield 經典早午餐', time: '12:00', price: '$45/人', note: '高人氣精品網美鬆餅 Brunch 補滿精力。', transitType: '開車', transitTime: '15' },
-                    { id: 5, dayId: '0614', category: '美食', name: '新雪梨魚市場海鮮大餐', time: '13:30', price: '$80', note: '海鮮控天堂！狂嗑新鮮岩蠔、焗烤龍蝦與現炸魚薯條。', transitType: '開車', transitTime: '20' },
-                    { id: 6, dayId: '0614', category: '美食', name: '雪梨塔 SkyFeast 高空晚宴', time: '17:00', price: '$155/人', note: '【7 人大桌已預約 17:00-18:45】360度坐擁冬日金黃落日與都市夜景。', transitType: '步行', transitTime: '15' },
-                    { id: 7, dayId: '0614', category: '購物', name: 'Woolworths Town Hall 採買', time: '19:00', price: '視消費', note: '補給大瓶飲用水、乾糧與水果。', transitType: '步行', transitTime: '10' },
+                    { id: 1, dayId: '0614', category: '航班', name: '越南航空抵達雪梨', time: '08:15', price: '已付', note: '抵達雪梨 T1 航廈，Maxi Taxi 大包車接送前往市區。', transitType: '開車', transitTime: '45' },
+                    { id: 2, dayId: '0614', category: '住宿', name: 'YEHS Hotel 寄放行李', time: '09:30', price: '免費', note: '先放大件行李，洗把臉準備出發。', photoSpot: '飯店大廳', transitType: '步行', transitTime: '15' },
+                    { id: 3, dayId: '0614', category: '住宿', name: '租車點辦理領車手續', time: '11:30', price: '已含', note: '前往 SIXT 門市取 Toyota RAV4 Hybrid 開始自駕。', transitType: '開車', transitTime: '20' },
+                    { id: 4, dayId: '0614', category: '美食', name: 'Happyfield 經典早午餐', time: '12:00', price: '$45/人', note: '朝盛超高評價精緻鬆餅。', restaurant: 'Happyfield', transitType: '開車', transitTime: '15' },
+                    { id: 5, dayId: '0614', category: '美食', name: '新雪梨魚市場海鮮大餐', time: '13:30', price: '自理', note: '岩生蠔、現烤起司大龍蝦配現炸魚薯條。', restaurant: '魚市場海鮮攤位', photoSpot: '水岸海港餐桌', transitType: '開車', transitTime: '20' },
+                    { id: 6, dayId: '0614', category: '美食', name: '雪梨塔 SkyFeast 高空晚宴', time: '17:00', price: '$155/人', note: '【7 人大桌已確認 17:00-18:45】360度邊吃自助餐邊賞金黃夕陽。', restaurant: 'SkyFeast', photoSpot: '雪梨塔窗邊', transitType: '步行', transitTime: '15' },
+                    { id: 7, dayId: '0614', category: '購物', name: 'Woolworths Town Hall 採買', time: '19:00', price: '視消費', note: '採買礦泉水、必備零食補給。', shopping: 'Tim Tam、薑汁啤酒', transitType: '步行', transitTime: '10' },
 
                     // 6/15 Mon D-2
-                    { id: 10, dayId: '0615', category: '景點', name: '塔龍加動物園 Taronga Zoo', time: '09:00', price: '$44/人', note: '與澳洲特有種無尾熊、巨型袋鼠親密同框，必拍長頸鹿襯托的雪梨港。', transitType: '大眾運輸', transitTime: '30' },
-                    { id: 11, dayId: '0615', category: '美食', name: 'Pancakes on the Rocks 午餐', time: '12:00', price: '$35/人', note: '環形碼頭指標性名店，必點招牌火烤豬肋排與冰淇淋鬆餅。', transitType: '大眾運輸', transitTime: '25' },
-                    { id: 12, dayId: '0615', category: '購物', name: 'DFO Homebush Outlet 爆買', time: '14:00', price: '免費', note: '主攻澳洲 UGG 雪靴、Timberland、Coach 限時極限折扣。', transitType: '開車', transitTime: '35' },
-                    { id: 13, dayId: '0615', category: '其他', name: 'The Star 奢華賭場自助餐', time: '18:30', price: '$60/人', note: '在豪華大型室內商場感受璀璨水晶燈大廳，享用高級扒房。', transitType: '大眾運輸', transitTime: '20' },
+                    { id: 10, dayId: '0615', category: '景點', name: '塔龍加動物園 Taronga Zoo', time: '09:00', price: '$44/人', note: '親近無尾熊和袋鼠。', photoSpot: '長頸鹿同框市區天際線', transitType: '大眾運輸', transitTime: '30' },
+                    { id: 11, dayId: '0615', category: '美食', name: 'Pancakes on the Rocks 午餐', time: '12:00', price: '$35/人', note: '經典必吃碳烤肋排與巨大巧克力鬆餅。', restaurant: 'Pancakes Rocks', transitType: '大眾運輸', transitTime: '25' },
+                    { id: 12, dayId: '0615', category: '購物', name: 'DFO Homebush Outlet 爆買', time: '14:00', price: '免費', note: 'UGG雪靴、Timberland、Coach工廠折扣。', shopping: 'UGG、運動服飾', transitType: '開車', transitTime: '35' },
+                    { id: 13, dayId: '0615', category: '其他', name: 'The Star 奢華賭場自助餐', time: '18:30', price: '$60/人', note: '在豪華室內商場享受海鮮大餐。', restaurant: 'Harvest Buffet', photoSpot: '大廳奢華水晶燈', transitType: '大眾運輸', transitTime: '20' },
 
                     // 6/16 Tue D-3
-                    { id: 20, dayId: '0616', category: '景點', name: 'Sea Cliff Bridge 海崖大橋', time: '09:30', price: '免費', note: '南海岸自駕必經的絕美海上高架公路段，停靠路旁步行拍下車軌大片。', transitType: '開車', transitTime: '60' },
-                    { id: 21, dayId: '0616', category: '景點', name: 'Aviation Museum 航空博物館', time: '11:00', price: '$35', note: '視團隊成員體能狀況與興趣，自由安排停留。', transitType: '開車', transitTime: '30' },
-                    { id: 22, dayId: '0616', category: '美食', name: 'Kiama The Hungry Monkey 漢堡', time: '12:30', price: '$30/人', note: '老饕推薦爆汁厚牛肉漢堡與金黃西葫蘆條。', transitType: '步行', transitTime: '5' },
-                    { id: 23, dayId: '0616', category: '景點', name: 'Kiama Blowhole 噴水洞 + 燈塔', time: '13:30', price: '免費', note: '天然壯觀海蝕洞，抓拍沖天巨型水柱與彩虹。', transitType: '開車', transitTime: '40' },
-                    { id: 24, dayId: '0616', category: '景點', name: 'Gerringong 海邊牧場散步', time: '15:00', price: '免費', note: '猶如瑞士油畫般夢幻的翠綠山坡與湛藍大海交界。', transitType: '開車', transitTime: '35' },
-                    { id: 25, dayId: '0616', category: '景點', name: '袋鼠谷 Bendeela 野生袋熊棲息區', time: '17:15', price: '免費', note: '【黃昏高機率出沒】成群野生袋熊出來覓食，請安靜保持距離，切勿驚嚇。', transitType: '開車', transitTime: '120' },
+                    { id: 20, dayId: '0616', category: '景點', name: 'Sea Cliff Bridge 海崖大橋', time: '09:30', price: '免費', note: '最美自駕公路，步行拍攝延伸感長焦大片。', photoSpot: '高空大橋步行道', transitType: '開車', transitTime: '60' },
+                    { id: 21, dayId: '0616', category: '景點', name: 'Aviation Museum 航空博物館', time: '11:00', price: '$35', note: '彈性安排，參觀復古飛機。', transitType: '開車', transitTime: '30' },
+                    { id: 22, dayId: '0616', category: '美食', name: 'Kiama The Hungry Monkey 漢堡', time: '12:30', price: '$30/人', note: '在地人狂推的多汁厚牛肉堡。', restaurant: 'The Hungry Monkey', transitType: '步行', transitTime: '5' },
+                    { id: 23, dayId: '0616', category: '景點', name: 'Kiama Blowhole 噴水洞 + 燈塔', time: '13:30', price: '免費', note: '天然壯觀海蝕洞。', photoSpot: '白色燈塔邊', transitType: '開車', transitTime: '40' },
+                    { id: 24, dayId: '0616', category: '景點', name: 'Gerringong 海邊牧場散步', time: '15:00', price: '免費', note: '翠綠草坡連綿到無邊海景。', photoSpot: '牧場海景步道', transitType: '開車', transitTime: '35' },
+                    { id: 25, dayId: '0616', category: '景點', name: '袋鼠谷 Bendeela 野生袋熊生態', time: '17:15', price: '免費', note: '【黃昏高機率】看野生袋熊出沒。', photoSpot: '袋熊覓食草地', transitType: '開車', transitTime: '120' },
 
                     // 6/17 Wed D-4
-                    { id: 30, dayId: '0617', category: '景點', name: 'Leura 復古童話小鎮', time: '09:30', price: '免費', note: '漫步漫遊特色花園別墅、手工復古糖果屋。', transitType: '開車', transitTime: '90' },
-                    { id: 31, dayId: '0617', category: '美食', name: 'The Yellow Deli 童話風手工三明治', time: '11:00', price: '$40/人', note: '極具人氣的樹屋風格餐廳，激推厚切熱烤牛肉三明治。', transitType: '開車', transitTime: '15' },
-                    { id: 32, dayId: '0617', category: '景點', name: 'Scenic World 藍山景觀纜車', time: '12:30', price: '$65/人', note: '挑戰透明高空天際纜車與52度森林鐵道，完美捕捉三姐妹岩全貌。', transitType: '開車', transitTime: '10' },
-                    { id: 33, dayId: '0617', category: '景點', name: 'Lincoln\'s Rock 懸崖絕景', time: '15:30', price: '免費', note: '站在平坦巨型斷崖邊緣，享受毫無遮擋的壯闊藍山大峽谷。', transitType: '開車', transitTime: '90' },
-                    { id: 34, dayId: '0617', category: '美食', name: '晚餐：市區熱騰騰酸菜白肉鍋', time: '18:30', price: '自理', note: '自駕開車返回市區，冬天晚上吃酸菜白肉鍋最保暖。', transitType: '步行', transitTime: '15' },
+                    { id: 30, dayId: '0617', category: '景點', name: 'Leura 復古童話小鎮', time: '09:30', price: '免費', note: '漫步手工糖果屋。', shopping: '特色果醬/糖果', transitType: '開車', transitTime: '90' },
+                    { id: 31, dayId: '0617', category: '美食', name: 'The Yellow Deli 童話風手工三明治', time: '11:00', price: '$40/人', note: '經典極具特色的樹屋裝潢。', restaurant: 'Yellow Deli', transitType: '開車', transitTime: '15' },
+                    { id: 32, dayId: '0617', category: '景點', name: 'Scenic World 藍山景觀纜車', time: '12:30', price: '$65/人', note: '坐森林小火車飽覽三姐妹岩全景。', photoSpot: '高空透明纜車窗景', transitType: '開車', transitTime: '10' },
+                    { id: 33, dayId: '0617', category: '景點', name: 'Lincoln\'s Rock 懸崖絕景', time: '15:30', price: '免費', note: '坐在巨型斷崖邊拍攝史詩大片。', photoSpot: ' Lincoln\'s Rock 懸崖邊緣', transitType: '開車', transitTime: '90' },
+                    { id: 34, dayId: '0617', category: '美食', name: '晚餐：市區熱騰騰酸菜白肉鍋', time: '18:30', price: '自理', note: '開車回市區，冬夜來頓熱鍋。', transitType: '步行', transitTime: '15' },
 
                     // 6/18 Thu D-5
-                    { id: 40, dayId: '0618', category: '景點', name: 'Audrey Wilkinson 山頂莊園品酒', time: '10:30', price: '$30', note: '坐落於山頂的頂級古老酒莊，賞 360 度葡萄園與網美鞦韆。', transitType: '開車', transitTime: '120' },
-                    { id: 41, dayId: '0618', category: '景點', name: 'Hunter Valley Gardens 莊園午餐', time: '13:00', price: '視消費', note: '在廣闊的主題花園內享受輕食與手工起司巧克力工坊。', transitType: '開車', transitTime: '20' },
-                    { id: 42, dayId: '0618', category: '景點', name: 'Tempus Two 現代藝術感酒莊', time: '15:00', price: '免費', note: '設計感強烈的極簡石質建築酒窖。', transitType: '開車', transitTime: '120' },
-                    { id: 43, dayId: '0618', category: '購物', name: 'QVB 維多利亞女王大廈巡禮', time: '17:30', price: '視消費', note: '市區順利還車！開啟大掃貨模式（進攻 Aesop、T2 伴手禮）。', transitType: '步行', transitTime: '15' },
-                    { id: 44, dayId: '0618', category: '美食', name: 'Bar Totti\'s 經典義式餐酒晚宴', time: '19:30', price: '$65', note: '【9 人大桌 19:30 預約成功】必點現烤超大膨脹口袋餅與現切生火腿。', transitType: '步行', transitTime: '10' },
+                    { id: 40, dayId: '0618', category: '景點', name: 'Audrey Wilkinson 山頂莊園品酒', time: '10:30', price: '$30', note: '360 度環繞葡萄園與網美鞦韆。', photoSpot: '山頂葡萄園鞦韆', transitType: '開車', transitTime: '120' },
+                    { id: 41, dayId: '0618', category: '景點', name: 'Hunter Valley Gardens 莊園午餐', time: '13:00', price: '視消費', note: '享用起司與巧克力工坊。', restaurant: '莊園輕食餐廳', transitType: '開車', transitTime: '20' },
+                    { id: 42, dayId: '0618', category: '景點', name: 'Tempus Two 現代藝術風酒莊', time: '15:00', price: '免費', note: '前衛幾何建築酒窖。', photoSpot: '前衛灰石建築外牆', transitType: '開車', transitTime: '120' },
+                    { id: 43, dayId: '0618', category: '購物', name: 'QVB 維多利亞女王大廈巡禮', time: '17:30', price: '視消費', note: '順利還車！爆買 Aesop 和 T2 茶葉。', shopping: 'Aesop 精油、T2 茶葉', photoSpot: '大時鐘下', transitType: '步行', transitTime: '15' },
+                    { id: 44, dayId: '0618', category: '美食', name: 'Bar Totti\'s 經典義式餐酒晚宴', time: '19:30', price: '$65', note: '【9 人大桌 19:30 預約成功】超大膨脹口袋餅配生火腿。', restaurant: 'Bar Totti\'s', transitType: '步行', transitTime: '10' },
 
                     // 6/19 Fri D-6
-                    { id: 50, dayId: '0619', category: '景點', name: '座頭鯨大遷徙震撼巡航', time: '09:00', price: '$95/人', note: '環形碼頭登船出海！觀賞萬獸之王座頭鯨在海面翻滾躍動（歷時 3 小時）。', transitType: '步行', transitTime: '20' },
-                    { id: 51, dayId: '0619', category: '美食', name: 'Hurricane\'s Grill 招牌火烤肋排', time: '18:30', price: '$75', note: '【JUYING Kuo 預約 9 人成功 18:30】大口啃招牌蜜汁豬肋排慶功！', transitType: '大眾運輸', transitTime: '25' },
+                    { id: 50, dayId: '0619', category: '景點', name: '座頭鯨大遷徙震撼巡航', time: '09:00', price: '$95/人', note: '環形碼頭登船出海，近距離追鯨躍出水面（3小時）。', photoSpot: '遊輪露天甲板', transitType: '步行', transitTime: '20' },
+                    { id: 51, dayId: '0619', category: '美食', name: 'Hurricane\'s Grill 招牌火烤肋排', time: '18:30', price: '$75', note: '【JUYING Kuo 預約 9 人成功 18:30】啃招牌蜜汁豬肋排慶功！', restaurant: 'Hurricane\'s Grill', transitType: '大眾運輸', transitTime: '25' },
 
                     // 6/20 Sat D-7
-                    { id: 60, dayId: '0620', category: '美食', name: 'Lune Croissanterie 世界第一神級可頌', time: '08:30', price: '$15/人', note: '紐約時報評選全球最完美可頌！層次分明酥到靈魂深處（建議外帶）。', transitType: '步行', transitTime: '15' },
-                    { id: 61, dayId: '0620', category: '購物', name: 'QVB 最後黃金補貨衝刺', time: '10:00', price: '視消費', note: '散步漫步，把行李箱沒填滿的空隙全部補足。', transitType: '步行', transitTime: '10' },
-                    { id: 62, dayId: '0620', category: '住宿', name: '飯店行李總打包與退房辦理', time: '11:00', price: '免費', note: 'YEHS Hotel 準時辦理退房，大廳行李清點。', transitType: '步行', transitTime: '15' },
-                    { id: 63, dayId: '0620', category: '其他', name: '預約 Maxi Taxi 大包車前往機場', time: '11:30', price: '$20/人', note: '9 人大量冬裝行李免煩惱，專車安全接送直達國際航廈。', transitType: '開車', transitTime: '30' },
-                    { id: 64, dayId: '0620', category: '航班', name: '機場櫃檯登機 + TRS 快速退稅辦理', time: '12:00', price: '視個人', note: '14:15 越航準時起飛！出境通關前透過 TRS App 走專用通道退稅 10% GST。', transitType: '步行', transitTime: '10' }
+                    { id: 60, dayId: '0620', category: '美食', name: 'Lune Croissanterie 世界第一可頌', time: '08:30', price: '$15/人', note: '紐約時報評選全球最完美可頌！層次分明酥脆無比（建議外帶）。', restaurant: 'Lune Croissanterie', transitType: '步行', transitTime: '15' },
+                    { id: 61, dayId: '0620', category: '購物', name: 'QVB 最後黃金補貨衝刺', time: '10:00', price: '視消費', note: '做行李箱塞滿前的最後伴手禮採購。', shopping: '藥妝與剩餘零食', transitType: '步行', transitTime: '10' },
+                    { id: 62, dayId: '0620', category: '住宿', name: '飯店行李總打包與退房辦理', time: '11:00', price: '免費', note: 'YEHS Hotel 準時大廳清點大件行李辦理退房。', transitType: '步行', transitTime: '15' },
+                    { id: 63, dayId: '0620', category: '其他', name: '搭乘 Maxi Taxi 大包車直奔機場', time: '11:30', price: '$20/人', note: '9 人大團體加行李專車直達雪梨機場。', transitType: '開車', transitTime: '30' },
+                    { id: 64, dayId: '0620', category: '航班', name: '機場櫃檯登機 + TRS 快速退稅辦理', time: '12:00', price: '視個人', note: '14:15 越航準時起飛！出境前完成 TRS App 退稅 10% GST。', transitType: '步行', transitTime: '10' }
                 ]);
 
                 const fx = ref({ aud: 1, twd: 21.3 });
@@ -422,7 +568,7 @@
 
                 const expenses = ref([
                     { id: 1, category: '交通', name: 'Sixt 合約預付 RAV4 Hybrid 5日自駕全險車資', date: '2026-06-14', amount: 718.32, payment: '信用卡' },
-                    { id: 2, category: '飲食', name: '雪梨塔 SkyFeast 大桌景觀餐廳訂金', date: '2026-06-14', amount: 1085, payment: '信用卡' },
+                    { id: 2, category: '飲食', name: '雪梨塔 SkyFeast 大桌高空餐飲訂金', date: '2026-06-14', amount: 1085, payment: '信用卡' },
                     { id: 3, category: '門票', name: '冬日座頭鯨巡航賞鯨船 9人電子票券', date: '2026-06-19', amount: 855, payment: '信用卡' }
                 ]);
 
@@ -465,7 +611,7 @@
                     modal.value.show = true;
                     modal.value.type = type;
                     modal.value.isEdit = false;
-                    if (type === 'itinerary') modal.value.data = { category: '景點', name: '', time: '', price: '', note: '', transitType: '開車', transitTime: '15' };
+                    if (type === 'itinerary') modal.value.data = { category: '景點', name: '', time: '', price: '', note: '', restaurant: '', photoSpot: '', shopping: '', transitType: '開車', transitTime: '15' };
                     else if (type === 'shopping') modal.value.data = { name: '', price: '' };
                     else if (type === 'expense') modal.value.data = { category: '飲食', name: '', amount: 0, payment: '現金', date: new Date().toISOString().split('T')[0] };
                 };
@@ -532,11 +678,16 @@
 
                 watch(currentTab, (newTab) => { if (newTab === 'itinerary') nextTick(() => initSortable()); });
 
-                onMounted(() => { initSortable(); });
+                // 🔴 生命週期掛載時，第一時間向大氣科學 API 發送異步請求獲取最新即時數據
+                onMounted(() => { 
+                    initSortable(); 
+                    fetchLiveSydneyWeather();
+                });
 
                 return {
                     currentTab, days, selectedDayId, weather, itineraryItems, currentDayItems,
                     fx, calcTwd, calcAud, shoppingList, expenses, totalExpenseAmount, modal,
+                    sweepRoutes, masterShopList, shopTips,
                     getCategoryColor, getCategoryBadgeClass, getTransitIcon, getExpenseCategoryIcon, getExpenseCategoryBg,
                     openAddModal, openEditModal, saveModalData, confirmDelete, deleteShopItem, deleteExpense,
                     triggerPhotoUpload, handlePhotoSelected
